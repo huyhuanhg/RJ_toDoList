@@ -1,86 +1,52 @@
-import {Router, Switch} from "react-router-dom";
-
-import history from './utils/history';
-
-import 'antd/dist/antd.css';
 import './App.css';
+import {Card} from 'antd';
 
-import Main from "./component/layouts/Main";
-
-import HomePage from "./component/pages/HomePage";
-import CreatePage from "./component/pages/CreatePage";
-import UpdatePage from "./component/pages/UpdatePage";
-import DeletePage from "./component/pages/DeletePage";
-
-import {useEffect, useState} from "react";
+import "antd/dist/antd.css";
+import {useState} from "react";
+import TaskItem from "./component/TaskItem";
+import TaskForm from "./component/TaskForm";
+import Search from "./component/Search";
 
 function App() {
     const [taskList, setTaskList] = useState([]);
+    const [searchKey, setSearchKey] = useState('');
 
-    useEffect(() => {
-        if (localStorage && localStorage.tasks) {
-            let tasks = JSON.parse(localStorage.tasks)
-            setTaskList(tasks);
-        }
-    }, []);
-
-
-    const save = (tasks) => {
-        localStorage.tasks = JSON.stringify(tasks);
+    const addTask = newTask => {
+        setTaskList([newTask, ...taskList]);
     }
-
-    const createKey = () => {
+    const editTask = (task, index) => {
         let tasks = [...taskList];
-        tasks.sort((a, b) => {
-            return a.key - b.key;
-        });
-        let k = 0;
-        for (let i = 0; i < tasks.length; i++) {
-            if (tasks[i].key - k > 1) {
-                return k + 1;
-            } else {
-                k++;
-            }
-        }
-        return tasks.length > 0 ? tasks[tasks.length - 1].key + 1 : 1;
-    };
-    const getTask = (key) => {
-        return taskList.find((task) => {
-            return task.key === key;
+        tasks.splice(index, 1, task);
+        setTaskList(tasks)
+    }
+    const deleteTask = index => {
+        let tasks = [...taskList];
+        tasks.splice(index, 1);
+        setTaskList(tasks)
+    }
+    const filterTask = taskList.filter((task) => {
+        return task.taskName.toLowerCase().indexOf(searchKey.toLowerCase()) !== -1;
+    })
+
+    const rederTaskList = () => {
+        return filterTask.map((task, index) => {
+            return (
+                <TaskItem task={task} deleteTask={deleteTask} key={index} index={index} editTask={editTask}/>
+            )
         })
     }
-    const createTask = (newTask) => {
-        let tasks = [
-            ...taskList,
-            newTask
-        ];
-        setTaskList(tasks)
-        save(tasks);
-    }
-
-    const updateTask = (task) => {
-        let newTask = taskList;
-        newTask.splice(task.key - 1, 1, task);
-        setTaskList(newTask);
-        save(newTask);
-    }
-
-    const deleteTask = key => {
-        let newTask = [...taskList];
-        newTask.splice(newTask.indexOf(getTask(key)), 1);
-        setTaskList(newTask);
-        save(newTask);
-    }
     return (
-        <Router history={history}>
-            <Switch>
-                <Main exact path="/" component={HomePage} taskList={taskList} setTaskList={setTaskList}/>
-                <Main exact path="/create" component={CreatePage} createTask={createTask} createKey={createKey}/>
-                <Main exact path="/update/:key" component={UpdatePage} getTask={getTask} updateTask={updateTask}/>
-                <Main exact path="/delete/:key" component={DeletePage} getTask={getTask} deleteTask={deleteTask}/>
-            </Switch>
-        </Router>
+        <div className="App">
+            <Card title="To do list App" style={{width: "60%", margin: '0 auto'}}>
+                <TaskForm addTask={addTask} type="add"/>
+            </Card>
+            <Search setSearchKey={setSearchKey}/>
+            <div className="task-list">
+                {rederTaskList()}
+            </div>
+        </div>
     );
 }
 
 export default App;
+
